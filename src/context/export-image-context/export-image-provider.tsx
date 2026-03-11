@@ -10,11 +10,13 @@ import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import type { EffectiveTheme } from '../theme-context/theme-context';
 
+const PADDING = 50; // Padding around the diagram content
+
 export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
     children,
 }) => {
     const { hideLoader, showLoader } = useFullScreenLoader();
-    const { setNodes, getViewport } = useReactFlow();
+    const { setNodes, getNodes } = useReactFlow();
     const { effectiveTheme } = useTheme();
     const { diagramName } = useChartDB();
     const [logoBase64, setLogoBase64] = useState<string>('');
@@ -66,6 +68,41 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
         []
     );
 
+    /**
+     * Calculate the bounding box of all visible nodes
+     */
+    const getDiagramBoundingBox = useCallback(() => {
+        const nodes = getNodes();
+        const visibleNodes = nodes.filter((node) => !node.hidden);
+
+        if (visibleNodes.length === 0) {
+            return { x: 0, y: 0, width: 800, height: 600 };
+        }
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        visibleNodes.forEach((node) => {
+            const { x, y } = node.position;
+            const width = node.measured?.width || node.width || 200;
+            const height = node.measured?.height || node.height || 300;
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + width);
+            maxY = Math.max(maxY, y + height);
+        });
+
+        return {
+            x: minX - PADDING,
+            y: minY - PADDING,
+            width: maxX - minX + PADDING * 2,
+            height: maxY - minY + PADDING * 2,
+        };
+    }, [getNodes]);
+
     const exportImage: ExportImageContext['exportImage'] = useCallback(
         async (type, { includePatternBG, transparent, scale }) => {
             showLoader({
@@ -76,18 +113,10 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                 nodes.map((node) => ({ ...node, selected: false }))
             );
 
-            const viewport = getViewport();
-            const reactFlowBounds = document
-                .querySelector('.react-flow')
-                ?.getBoundingClientRect();
-
-            if (!reactFlowBounds) {
-                console.error('Could not find React Flow container');
-                hideLoader();
-                return;
-            }
-
             const imageCreateFn = imageCreatorMap[type];
+
+            // Calculate the bounding box of all visible nodes
+            const boundingBox = getDiagramBoundingBox();
 
             setTimeout(async () => {
                 const viewportElement = window.document.querySelector(
@@ -111,7 +140,7 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                 tempSvg.style.zIndex = '-50';
                 tempSvg.setAttribute(
                     'viewBox',
-                    `0 0 ${reactFlowBounds.width} ${reactFlowBounds.height}`
+                    `0 0 ${boundingBox.width} ${boundingBox.height}`
                 );
 
                 const defs = document.createElementNS(
@@ -170,23 +199,18 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                         'pattern'
                     );
                     pattern.setAttribute('id', 'background-pattern');
-                    pattern.setAttribute('width', String(16 * viewport.zoom));
-                    pattern.setAttribute('height', String(16 * viewport.zoom));
+                    pattern.setAttribute('width', '16');
+                    pattern.setAttribute('height', '16');
                     pattern.setAttribute('patternUnits', 'userSpaceOnUse');
-                    pattern.setAttribute(
-                        'patternTransform',
-                        `translate(${viewport.x % (16 * viewport.zoom)} ${viewport.y % (16 * viewport.zoom)})`
-                    );
 
                     const dot = document.createElementNS(
                         'http://www.w3.org/2000/svg',
                         'circle'
                     );
 
-                    const dotSize = viewport.zoom * 0.5;
-                    dot.setAttribute('cx', String(viewport.zoom));
-                    dot.setAttribute('cy', String(viewport.zoom));
-                    dot.setAttribute('r', String(dotSize));
+                    dot.setAttribute('cx', '8');
+                    dot.setAttribute('cy', '8');
+                    dot.setAttribute('r', '0.5');
                     const dotColor =
                         effectiveTheme === 'light' ? '#92939C' : '#777777';
                     dot.setAttribute('fill', dotColor);
@@ -201,22 +225,12 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                     'http://www.w3.org/2000/svg',
                     'rect'
                 );
-                const bgPadding = 2000;
-                backgroundRect.setAttribute(
-                    'x',
-                    String(-viewport.x - bgPadding)
-                );
-                backgroundRect.setAttribute(
-                    'y',
-                    String(-viewport.y - bgPadding)
-                );
-                backgroundRect.setAttribute(
-                    'width',
-                    String(reactFlowBounds.width + 2 * bgPadding)
-                );
+                backgroundRect.setAttribute('x', '0');
+                backgroundRect.setAttribute('y', '0');
+                backgroundRect.setAttribute('width', String(boundingBox.width));
                 backgroundRect.setAttribute(
                     'height',
-                    String(reactFlowBounds.height + 2 * bgPadding)
+                    String(boundingBox.height)
                 );
                 backgroundRect.setAttribute('fill', 'url(#background-pattern)');
                 tempSvg.appendChild(backgroundRect);
@@ -251,12 +265,13 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                     // Handle SVG export differently
                     if (type === 'svg') {
                         const dataUrl = await imageCreateFn(viewportElement, {
-                            width: reactFlowBounds.width,
-                            height: reactFlowBounds.height,
+                            width: boundingBox.width,
+                            height: boundingBox.height,
                             style: {
-                                width: `${reactFlowBounds.width}px`,
-                                height: `${reactFlowBounds.height}px`,
-                                transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+                                width: `${boundingBox.width}px`,
+                                height: `${boundingBox.height}px`,
+                                // Render at 100% zoom (scale=1), positioned to show the full diagram
+                                transform: `translate(${-boundingBox.x}px, ${-boundingBox.y}px) scale(1)`,
                             },
                             quality: 1,
                             pixelRatio: scale,
@@ -274,12 +289,13 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                                 effectiveTheme,
                                 transparent
                             ),
-                            width: reactFlowBounds.width,
-                            height: reactFlowBounds.height,
+                            width: boundingBox.width,
+                            height: boundingBox.height,
                             style: {
-                                width: `${reactFlowBounds.width}px`,
-                                height: `${reactFlowBounds.height}px`,
-                                transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+                                width: `${boundingBox.width}px`,
+                                height: `${boundingBox.height}px`,
+                                // Render at 100% zoom (scale=1), positioned to show the full diagram
+                                transform: `translate(${-boundingBox.x}px, ${-boundingBox.y}px) scale(1)`,
                             },
                             quality: 1,
                             pixelRatio: scale,
@@ -297,8 +313,8 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                     }
 
                     // Set canvas size to match the export size
-                    canvas.width = reactFlowBounds.width * scale;
-                    canvas.height = reactFlowBounds.height * scale;
+                    canvas.width = boundingBox.width * scale;
+                    canvas.height = boundingBox.height * scale;
 
                     // Load the exported diagram
                     const diagramImage = new Image();
@@ -344,6 +360,13 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
                                 };
                             });
 
+                            // TODO: Add image compression option for PNG and JPEG exports
+                            // - Add a compression quality parameter (0-1) to the export options
+                            // - For JPEG: use canvas.toDataURL('image/jpeg', quality)
+                            // - For PNG: consider using a library like browser-image-compression or pngquant
+                            // - Add UI option in export-image-dialog to let user choose compression level
+                            // - Display estimated file size before download
+
                             // Convert canvas to data URL
                             const finalDataUrl = canvas.toDataURL(
                                 type === 'png' ? 'image/png' : 'image/jpeg'
@@ -368,7 +391,7 @@ export const ExportImageProvider: React.FC<React.PropsWithChildren> = ({
         [
             getBackgroundColor,
             downloadImage,
-            getViewport,
+            getDiagramBoundingBox,
             hideLoader,
             imageCreatorMap,
             setNodes,

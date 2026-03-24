@@ -276,6 +276,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     const [selectedRelationshipIds, setSelectedRelationshipIds] = useState<
         string[]
     >([]);
+    // Track dragging state to hide edges during drag for performance
+    const [isDraggingNode, setIsDraggingNode] = useState(false);
     const { toast } = useToast();
     const { t } = useTranslation();
     const { isLostInCanvas } = useIsLostInCanvas();
@@ -1600,6 +1602,9 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     }, [nodes, tempFloatingEdge, cursorPosition]);
 
     const edgesWithFloating = useMemo(() => {
+        // Hide all edges during node drag for better performance
+        if (isDraggingNode) return [];
+
         if (!tempFloatingEdge || !cursorPosition) return edges;
 
         let target = TEMP_CURSOR_NODE_ID;
@@ -1626,7 +1631,22 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         };
 
         return [...edges, tempEdge];
-    }, [edges, tempFloatingEdge, cursorPosition, hoveringTableId]);
+    }, [
+        edges,
+        tempFloatingEdge,
+        cursorPosition,
+        hoveringTableId,
+        isDraggingNode,
+    ]);
+
+    // Hide edges during drag for performance
+    const onNodeDragStart = useCallback(() => {
+        setIsDraggingNode(true);
+    }, []);
+
+    const onNodeDragStop = useCallback(() => {
+        setIsDraggingNode(false);
+    }, []);
 
     const onPaneClickHandler = useCallback(
         (event: React.MouseEvent<Element, MouseEvent>) => {
@@ -1681,6 +1701,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     edges={edgesWithFloating}
                     onNodesChange={onNodesChangeHandler}
                     onEdgesChange={onEdgesChangeHandler}
+                    onNodeDragStart={onNodeDragStart}
+                    onNodeDragStop={onNodeDragStop}
                     maxZoom={5}
                     minZoom={0.1}
                     onConnect={onConnectHandler}

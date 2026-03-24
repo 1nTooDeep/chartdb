@@ -559,18 +559,16 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
     useEffect(() => {
         setNodes((prevNodes) => {
+            // Create a map of previous nodes for quick lookup
+            const prevNodesMap = new Map(
+                prevNodes.map((node) => [node.id, node])
+            );
+
             const newNodes = [
                 ...tables.map((table) => {
+                    const prevNode = prevNodesMap.get(table.id);
                     const isOverlapping =
                         (overlapGraph.graph.get(table.id) ?? []).length > 0;
-                    const node = tableToTableNode(table, {
-                        filter,
-                        databaseType,
-                        filterLoading,
-                        showDBViews,
-                        forceShow: shouldForceShowTable(table.id),
-                        isRelationshipCreatingTarget: false,
-                    });
 
                     // Check if table uses the highlighted custom type
                     let hasHighlightedCustomType = false;
@@ -580,6 +578,61 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                                 field.type.name === highlightedCustomType.name
                         );
                     }
+
+                    // Check if we can reuse the previous node's data
+                    if (prevNode && prevNode.type === 'table') {
+                        const prevData = prevNode.data;
+                        const prevTable = prevData.table;
+
+                        // Check if table reference is the same and other data hasn't changed
+                        const tableUnchanged = prevTable === table;
+                        const overlapUnchanged =
+                            prevData.isOverlapping === isOverlapping;
+                        const highlightUnchanged =
+                            prevData.highlightOverlappingTables ===
+                            highlightOverlappingTables;
+                        const customTypeUnchanged =
+                            prevData.hasHighlightedCustomType ===
+                            hasHighlightedCustomType;
+                        const hiddenUnchanged =
+                            prevNode.hidden ===
+                            (filterLoading || (!showDBViews && table.isView));
+
+                        // If all data is unchanged, reuse the previous node
+                        if (
+                            tableUnchanged &&
+                            overlapUnchanged &&
+                            highlightUnchanged &&
+                            customTypeUnchanged &&
+                            hiddenUnchanged
+                        ) {
+                            return prevNode;
+                        }
+
+                        // If only derived data changed, reuse table reference
+                        return {
+                            ...prevNode,
+                            hidden:
+                                filterLoading || (!showDBViews && table.isView),
+                            data: {
+                                ...prevData,
+                                table,
+                                isOverlapping,
+                                highlightOverlappingTables,
+                                hasHighlightedCustomType,
+                            },
+                        };
+                    }
+
+                    // Create new node if no previous node exists
+                    const node = tableToTableNode(table, {
+                        filter,
+                        databaseType,
+                        filterLoading,
+                        showDBViews,
+                        forceShow: shouldForceShowTable(table.id),
+                        isRelationshipCreatingTarget: false,
+                    });
 
                     return {
                         ...node,
@@ -606,11 +659,6 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                         n.type === 'create-relationship'
                 ),
             ];
-
-            // Check if nodes actually changed
-            if (equal(prevNodes, newNodes)) {
-                return prevNodes;
-            }
 
             return newNodes;
         });

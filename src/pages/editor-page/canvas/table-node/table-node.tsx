@@ -84,7 +84,15 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
         },
     }) => {
         const { updateTable, relationships, readonly } = useChartDB();
-        const edges = useStore((store) => store.edges) as EdgeType[];
+        // Use a selector to only get edges related to this node
+        // This prevents re-renders when unrelated edges change
+        const edges = useStore((store) => {
+            const allEdges = store.edges as EdgeType[];
+            // Filter edges that are connected to this node
+            return allEdges.filter(
+                (edge) => edge.source === id || edge.target === id
+            );
+        });
         const {
             openTableFromSidebar,
             selectSidebarSection,
@@ -223,16 +231,16 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
 
             const relEdges: RelationshipEdgeType[] = [];
             for (const edge of edges) {
+                // edges already filtered to only include edges connected to this node
                 if (
                     edge.type === 'relationship-edge' &&
-                    (edge.source === id || edge.target === id) &&
                     (edge.selected || edge.data?.highlighted)
                 ) {
                     relEdges.push(edge as RelationshipEdgeType);
                 }
             }
             return relEdges;
-        }, [edges, id]);
+        }, [edges]);
 
         const highlightedFieldIds = useMemo(() => {
             const fieldIds = new Set<string>();

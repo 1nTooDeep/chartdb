@@ -45,6 +45,57 @@ export default defineConfig({
                     }
                     return 'assets/[name]-[hash][extname]';
                 },
+                manualChunks: (id) => {
+                    // Split monaco-editor into its own chunk (very large ~15MB)
+                    if (
+                        id.includes('monaco-editor') ||
+                        id.includes('monaco-editor-core')
+                    ) {
+                        return 'monaco-editor';
+                    }
+                    // Split @xyflow/react into its own chunk
+                    if (
+                        id.includes('@xyflow/react') ||
+                        id.includes('@xyflow/system')
+                    ) {
+                        return 'xyflow';
+                    }
+                    // Split React ecosystem
+                    if (id.includes('react-dom') || id.includes('scheduler')) {
+                        return 'react-vendor';
+                    }
+                    // Split other React libraries
+                    if (id.includes('react/') && !id.includes('react-dom')) {
+                        return 'react-vendor';
+                    }
+                    // Split UI libraries
+                    if (id.includes('lucide-react')) {
+                        return 'ui-icons';
+                    }
+                    // Split editor-related libraries
+                    if (
+                        id.includes('@codemirror') ||
+                        id.includes('@lezer') ||
+                        id.includes('@replit/codemirror')
+                    ) {
+                        return 'codemirror';
+                    }
+                    // Split DBML-related code
+                    if (id.includes('dbml') && !id.includes('node_modules')) {
+                        return 'dbml';
+                    }
+                    // Split canvas components
+                    if (
+                        id.includes('src/pages/editor-page/canvas/') &&
+                        !id.includes('canvas.tsx')
+                    ) {
+                        return 'canvas-components';
+                    }
+                    // Split templates data
+                    if (id.includes('templates-data')) {
+                        return 'templates';
+                    }
+                },
             },
         },
     },

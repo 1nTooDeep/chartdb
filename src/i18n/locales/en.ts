@@ -310,6 +310,8 @@ export const en = {
             custom_type_highlight_tooltip:
                 'Highlighting "{{typeName}}" - Click to clear',
             filter: 'Filter Tables',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

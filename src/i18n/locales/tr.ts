@@ -316,6 +316,8 @@ export const tr: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: 'Çakışan Tabloları Vurgula',
             filter: 'Tabloları Filtrele',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
         new_diagram_dialog: {
             database_selection: {

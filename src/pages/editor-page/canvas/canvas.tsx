@@ -51,6 +51,7 @@ import {
     AlertTriangle,
     Highlighter,
     EyeOff,
+    MessageSquareText,
 } from 'lucide-react';
 import { Button } from '@/components/button/button';
 import { useLayout } from '@/hooks/use-layout';
@@ -319,6 +320,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         hideCreateRelationshipNode,
         closeRelationshipPopover,
         events: canvasEvents,
+        tableTitleDisplayMode,
+        setTableTitleDisplayMode,
     } = useCanvas();
     const {
         filter,
@@ -1691,6 +1694,37 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                                                         ? '⇧'
                                                         : 'Shift',
                                             })}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span>
+                                                <Button
+                                                    variant="secondary"
+                                                    className={cn(
+                                                        'size-8 p-1 shadow-none',
+                                                        tableTitleDisplayMode ===
+                                                            'comment'
+                                                            ? 'bg-pink-600 text-white hover:bg-pink-500 dark:hover:bg-pink-700 hover:text-white'
+                                                            : ''
+                                                    )}
+                                                    onClick={() =>
+                                                        setTableTitleDisplayMode(
+                                                            (prev) =>
+                                                                prev === 'name'
+                                                                    ? 'comment'
+                                                                    : 'name'
+                                                        )
+                                                    }
+                                                >
+                                                    <MessageSquareText className="size-4" />
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {t(
+                                                'toolbar.table_title_display_mode_tooltip'
+                                            )}
                                         </TooltipContent>
                                     </Tooltip>
                                     {highlightedCustomType ? (

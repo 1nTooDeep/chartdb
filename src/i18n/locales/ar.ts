@@ -310,6 +310,8 @@ export const ar: LanguageTranslation = {
             reorder_diagram: 'ترتيب تلقائي للرسم البياني',
             highlight_overlapping_tables: 'تمييز الجداول المتداخلة',
             filter: 'تصفية الجداول',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
             clear_custom_type_highlight: 'Clear highlight for "{{typeName}}"',
             custom_type_highlight_tooltip:
                 'Highlighting "{{typeName}}" - Click to clear',

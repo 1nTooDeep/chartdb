@@ -319,6 +319,8 @@ export const es: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: 'Resaltar tablas superpuestas',
             filter: 'Filtrar Tablas',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

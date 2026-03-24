@@ -319,6 +319,8 @@ export const te: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: 'అవకాశించు పట్టికలను హైలైట్ చేయండి',
             filter: 'పట్టికలను ఫిల్టర్ చేయండి',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

@@ -320,6 +320,8 @@ export const hi: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: 'ओवरलैपिंग तालिकाओं को हाइलाइट करें',
             filter: 'टेबल फ़िल्टर करें',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

@@ -21,6 +21,8 @@ export type PanClickEvent = CanvasEventBase<
 
 export type CanvasEvent = PanClickEvent;
 
+export type TableTitleDisplayMode = 'name' | 'comment';
+
 export interface CanvasContext {
     reorderTables: (options?: { updateHistory?: boolean }) => void;
     fitView: (options?: {
@@ -77,6 +79,10 @@ export interface CanvasContext {
     }) => void;
     hideCreateRelationshipNode: () => void;
     events: EventEmitter<CanvasEvent>;
+    tableTitleDisplayMode: TableTitleDisplayMode;
+    setTableTitleDisplayMode: React.Dispatch<
+        React.SetStateAction<TableTitleDisplayMode>
+    >;
 }
 
 export const canvasContext = createContext<CanvasContext>({
@@ -100,4 +106,6 @@ export const canvasContext = createContext<CanvasContext>({
     showCreateRelationshipNode: emptyFn,
     hideCreateRelationshipNode: emptyFn,
     events: new EventEmitter(),
+    tableTitleDisplayMode: 'name',
+    setTableTitleDisplayMode: emptyFn,
 });

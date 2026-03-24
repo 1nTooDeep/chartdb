@@ -318,6 +318,8 @@ export const vi: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: 'Làm nổi bật các bảng chồng chéo',
             filter: 'Lọc Bảng',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

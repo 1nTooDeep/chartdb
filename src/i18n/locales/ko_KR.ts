@@ -318,6 +318,8 @@ export const ko_KR: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: '겹치는 테이블 강조 표시',
             filter: '테이블 필터',
+            table_title_display_mode_tooltip:
+                '테이블 제목 표시 전환: 이름 / 설명',
         },
 
         new_diagram_dialog: {

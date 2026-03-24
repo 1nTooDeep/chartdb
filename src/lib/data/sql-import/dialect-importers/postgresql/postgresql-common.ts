@@ -13,8 +13,9 @@ export interface TableLike {
     id: string;
     name: string;
     schema?: string;
-    columns: unknown[];
+    columns: Array<{ name: string; comment?: string }>;
     indexes: unknown[];
+    comment?: string;
 }
 
 export interface TableReference {

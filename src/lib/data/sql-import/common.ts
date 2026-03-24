@@ -822,6 +822,7 @@ export function convertToChartDBDiagram(
                 createdAt: Date.now(),
                 increment: column.increment,
                 isArray: isArrayType || undefined,
+                comments: column.comment || undefined,
             };
 
             // Add type arguments if present
@@ -958,6 +959,7 @@ export function convertToChartDBDiagram(
             color: table.isView ? viewColor : defaultTableColor,
             isView: table.isView ?? false,
             createdAt: Date.now(),
+            comments: table.comment || undefined,
         } satisfies DBTable;
     });
 

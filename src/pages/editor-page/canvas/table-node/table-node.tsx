@@ -99,7 +99,20 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
             setHoveringTableId,
             showCreateRelationshipNode,
             tempFloatingEdge,
+            tableTitleDisplayMode,
         } = useCanvas();
+
+        // Calculate the display title based on mode
+        const displayTitle = useMemo(() => {
+            if (
+                tableTitleDisplayMode === 'comment' &&
+                table.comments &&
+                table.comments.trim() !== ''
+            ) {
+                return table.comments;
+            }
+            return table.name;
+        }, [tableTitleDisplayMode, table.comments, table.name]);
 
         // Get edit mode state directly from context
         const editTableMode = useMemo(
@@ -572,7 +585,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                 </Label>
                             ) : (
                                 <Label className="truncate px-2 py-0.5 text-sm font-bold">
-                                    {table.name}
+                                    {displayTitle}
                                 </Label>
                             )}
                         </div>

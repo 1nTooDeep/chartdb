@@ -312,6 +312,7 @@ export const zh_CN: LanguageTranslation = {
                 'Highlighting "{{typeName}}" - Click to clear',
             highlight_overlapping_tables: '突出显示重叠的表',
             filter: '筛选表',
+            table_title_display_mode_tooltip: '切换表格标题显示：名称 / 注释',
         },
 
         new_diagram_dialog: {

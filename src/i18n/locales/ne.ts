@@ -320,6 +320,8 @@ export const ne: LanguageTranslation = {
             highlight_overlapping_tables:
                 'अतिरिक्त तालिकाहरू हाइलाइट गर्नुहोस्',
             filter: 'तालिकाहरू फिल्टर गर्नुहोस्',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

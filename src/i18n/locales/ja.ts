@@ -321,6 +321,8 @@ export const ja: LanguageTranslation = {
             custom_type_highlight_tooltip:
                 '「{{typeName}}」をハイライト中 - クリックで解除',
             filter: 'テーブルをフィルタ',
+            table_title_display_mode_tooltip:
+                'テーブルタイトルの表示切り替え：名前 / コメント',
         },
 
         new_diagram_dialog: {

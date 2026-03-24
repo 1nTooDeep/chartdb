@@ -5,7 +5,11 @@ import React, {
     useEffect,
     useRef,
 } from 'react';
-import type { CanvasContext, CanvasEvent } from './canvas-context';
+import type {
+    CanvasContext,
+    CanvasEvent,
+    TableTitleDisplayMode,
+} from './canvas-context';
 import { canvasContext } from './canvas-context';
 import { useChartDB } from '@/hooks/use-chartdb';
 import { adjustTablePositions } from '@/lib/domain/db-table';
@@ -63,6 +67,9 @@ export const CanvasProvider = ({ children }: CanvasProviderProps) => {
         useState<CanvasContext['tempFloatingEdge']>(null);
 
     const [hoveringTableId, setHoveringTableId] = useState<string | null>(null);
+
+    const [tableTitleDisplayMode, setTableTitleDisplayMode] =
+        useState<TableTitleDisplayMode>('name');
 
     const diagramIdActiveFilterRef = useRef<string>();
 
@@ -245,6 +252,8 @@ export const CanvasProvider = ({ children }: CanvasProviderProps) => {
                 showCreateRelationshipNode,
                 hideCreateRelationshipNode,
                 events,
+                tableTitleDisplayMode,
+                setTableTitleDisplayMode,
             }}
         >
             {children}

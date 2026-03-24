@@ -314,6 +314,8 @@ export const hr: LanguageTranslation = {
             custom_type_highlight_tooltip:
                 'Isticanje "{{typeName}}" - Kliknite za uklanjanje',
             filter: 'Filtriraj tablice',
+            table_title_display_mode_tooltip:
+                'Toggle table title: Name / Comment',
         },
 
         new_diagram_dialog: {

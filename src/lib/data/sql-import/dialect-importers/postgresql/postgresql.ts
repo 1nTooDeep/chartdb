@@ -40,6 +40,8 @@ interface ParsedStatement {
         | 'extension'
         | 'type'
         | 'comment'
+        | 'columnComment'
+        | 'tableComment'
         | 'other';
     sql: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,6 +176,10 @@ function preprocessSQL(sqlContent: string): PreprocessResult {
                 'Extension statements are not supported and will be skipped'
             );
             statements.push({ type: 'extension', sql: trimmedStmt });
+        } else if (upperStmt.startsWith('COMMENT ON COLUMN')) {
+            statements.push({ type: 'columnComment', sql: trimmedStmt });
+        } else if (upperStmt.startsWith('COMMENT ON TABLE')) {
+            statements.push({ type: 'tableComment', sql: trimmedStmt });
         } else if (
             upperStmt.startsWith('--') &&
             !upperStmt.includes('CREATE TABLE') &&
@@ -255,6 +261,253 @@ function splitSQLStatements(sql: string): string[] {
     }
 
     return statements;
+}
+
+/**
+ * Interface for parsed column comment
+ */
+interface ColumnCommentInfo {
+    schema: string;
+    table: string;
+    column: string;
+    comment: string;
+}
+
+/**
+ * Interface for parsed table comment
+ */
+interface TableCommentInfo {
+    schema: string;
+    table: string;
+    comment: string;
+}
+
+/**
+ * Extract a quoted or unquoted identifier from a string starting at given position
+ * Returns { identifier: string, endPos: number } or null if invalid
+ */
+function extractIdentifier(
+    sql: string,
+    startPos: number
+): { identifier: string; endPos: number } | null {
+    let pos = startPos;
+
+    // Skip leading whitespace
+    while (pos < sql.length && /\s/.test(sql[pos])) {
+        pos++;
+    }
+
+    if (pos >= sql.length) return null;
+
+    const startChar = sql[pos];
+    let identifier = '';
+
+    if (startChar === '"') {
+        // Quoted identifier
+        pos++; // Skip opening quote
+        while (pos < sql.length) {
+            if (sql[pos] === '"') {
+                if (pos + 1 < sql.length && sql[pos + 1] === '"') {
+                    // Escaped quote
+                    identifier += '"';
+                    pos += 2;
+                } else {
+                    // End of quoted identifier
+                    pos++; // Skip closing quote
+                    break;
+                }
+            } else {
+                identifier += sql[pos];
+                pos++;
+            }
+        }
+    } else {
+        // Unquoted identifier - read until dot, whitespace, or end
+        while (pos < sql.length) {
+            const char = sql[pos];
+            if (char === '.' || /\s/.test(char)) {
+                break;
+            }
+            identifier += char;
+            pos++;
+        }
+    }
+
+    if (!identifier) return null;
+
+    return { identifier, endPos: pos };
+}
+
+/**
+ * Parse COMMENT ON COLUMN statement
+ * Supports formats:
+ * - COMMENT ON COLUMN table.column IS 'comment';
+ * - COMMENT ON COLUMN schema.table.column IS 'comment';
+ * - COMMENT ON COLUMN "table"."column" IS 'comment';
+ * - COMMENT ON COLUMN "schema"."table"."column" IS 'comment';
+ */
+function parseCommentOnColumn(sql: string): ColumnCommentInfo | null {
+    // Remove trailing semicolon and normalize
+    const normalizedSql = sql.trim().replace(/;$/, '').trim();
+
+    // Find the COLUMN keyword
+    const columnKeywordMatch = normalizedSql.match(
+        /^COMMENT\s+ON\s+COLUMN\s+/i
+    );
+    if (!columnKeywordMatch) return null;
+
+    let pos = columnKeywordMatch[0].length;
+
+    // Extract identifiers separated by dots
+    const identifiers: string[] = [];
+    let expectDot = false;
+
+    while (pos < normalizedSql.length) {
+        // Skip whitespace
+        while (pos < normalizedSql.length && /\s/.test(normalizedSql[pos])) {
+            pos++;
+        }
+
+        if (pos >= normalizedSql.length) break;
+
+        // Check for IS keyword
+        if (
+            normalizedSql.substring(pos, pos + 2).toUpperCase() === 'IS' &&
+            /\s/.test(normalizedSql[pos + 2] || '')
+        ) {
+            break;
+        }
+
+        if (expectDot) {
+            if (normalizedSql[pos] === '.') {
+                pos++;
+                expectDot = false;
+                continue;
+            } else {
+                break; // Expected dot but found something else
+            }
+        }
+
+        const result = extractIdentifier(normalizedSql, pos);
+        if (!result) break;
+
+        identifiers.push(result.identifier);
+        pos = result.endPos;
+        expectDot = true;
+    }
+
+    // Find IS keyword and extract comment
+    const isMatch = normalizedSql
+        .substring(pos)
+        .match(/^\s*IS\s+'((?:[^']*(?:''[^']*)*))'/i);
+    if (!isMatch) return null;
+
+    const comment = isMatch[1].replace(/''/g, "'");
+
+    // Determine schema, table, column based on number of identifiers
+    if (identifiers.length === 3) {
+        // schema.table.column
+        return {
+            schema: identifiers[0],
+            table: identifiers[1],
+            column: identifiers[2],
+            comment,
+        };
+    } else if (identifiers.length === 2) {
+        // table.column
+        return {
+            schema: 'public',
+            table: identifiers[0],
+            column: identifiers[1],
+            comment,
+        };
+    }
+
+    return null;
+}
+
+/**
+ * Parse COMMENT ON TABLE statement
+ * Supports formats:
+ * - COMMENT ON TABLE table IS 'comment';
+ * - COMMENT ON TABLE schema.table IS 'comment';
+ * - COMMENT ON TABLE "table" IS 'comment';
+ * - COMMENT ON TABLE "schema"."table" IS 'comment';
+ */
+function parseCommentOnTable(sql: string): TableCommentInfo | null {
+    // Remove trailing semicolon and normalize
+    const normalizedSql = sql.trim().replace(/;$/, '').trim();
+
+    // Find the TABLE keyword
+    const tableKeywordMatch = normalizedSql.match(/^COMMENT\s+ON\s+TABLE\s+/i);
+    if (!tableKeywordMatch) return null;
+
+    let pos = tableKeywordMatch[0].length;
+
+    // Extract identifiers separated by dots
+    const identifiers: string[] = [];
+    let expectDot = false;
+
+    while (pos < normalizedSql.length) {
+        // Skip whitespace
+        while (pos < normalizedSql.length && /\s/.test(normalizedSql[pos])) {
+            pos++;
+        }
+
+        if (pos >= normalizedSql.length) break;
+
+        // Check for IS keyword
+        if (
+            normalizedSql.substring(pos, pos + 2).toUpperCase() === 'IS' &&
+            /\s/.test(normalizedSql[pos + 2] || '')
+        ) {
+            break;
+        }
+
+        if (expectDot) {
+            if (normalizedSql[pos] === '.') {
+                pos++;
+                expectDot = false;
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        const result = extractIdentifier(normalizedSql, pos);
+        if (!result) break;
+
+        identifiers.push(result.identifier);
+        pos = result.endPos;
+        expectDot = true;
+    }
+
+    // Find IS keyword and extract comment
+    const isMatch = normalizedSql
+        .substring(pos)
+        .match(/^\s*IS\s+'((?:[^']*(?:''[^']*)*))'/i);
+    if (!isMatch) return null;
+
+    const comment = isMatch[1].replace(/''/g, "'");
+
+    // Determine schema and table based on number of identifiers
+    if (identifiers.length === 2) {
+        // schema.table
+        return {
+            schema: identifiers[0],
+            table: identifiers[1],
+            comment,
+        };
+    } else if (identifiers.length === 1) {
+        // table only
+        return {
+            schema: 'public',
+            table: identifiers[0],
+            comment,
+        };
+    }
+
+    return null;
 }
 
 /**
@@ -2209,6 +2462,40 @@ export async function fromPostgres(
                             type: indexType,
                         });
                     }
+                }
+            }
+        }
+    }
+
+    // Sixth pass: process COMMENT ON statements
+    for (const stmt of statements) {
+        if (stmt.type === 'columnComment') {
+            const commentInfo = parseCommentOnColumn(stmt.sql);
+            if (commentInfo) {
+                const table = findTableWithSchemaSupport(
+                    tables,
+                    commentInfo.table,
+                    commentInfo.schema
+                );
+                if (table) {
+                    const column = table.columns.find(
+                        (col) => col.name === commentInfo.column
+                    );
+                    if (column) {
+                        column.comment = commentInfo.comment;
+                    }
+                }
+            }
+        } else if (stmt.type === 'tableComment') {
+            const commentInfo = parseCommentOnTable(stmt.sql);
+            if (commentInfo) {
+                const table = findTableWithSchemaSupport(
+                    tables,
+                    commentInfo.table,
+                    commentInfo.schema
+                );
+                if (table) {
+                    table.comment = commentInfo.comment;
                 }
             }
         }

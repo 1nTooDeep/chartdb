@@ -248,6 +248,7 @@ const areaToAreaNode = (
             zIndex: -10,
         },
         hidden: !hasVisibleTable || filterLoading,
+        draggable: !area.locked,
     };
 };
 

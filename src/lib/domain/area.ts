@@ -9,6 +9,7 @@ export interface Area {
     height: number;
     color: string;
     order?: number;
+    locked?: boolean;
 }
 
 export const areaSchema: z.ZodType<Area> = z.object({
@@ -20,4 +21,5 @@ export const areaSchema: z.ZodType<Area> = z.object({
     height: z.number(),
     color: z.string(),
     order: z.number().optional(),
+    locked: z.boolean().optional(),
 });

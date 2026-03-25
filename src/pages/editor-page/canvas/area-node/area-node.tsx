@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 import {
     Check,
     GripVertical,
+    Lock,
+    LockOpen,
     Pencil,
     SquareMinus,
     SquarePlus,
@@ -49,7 +51,16 @@ export const AreaNode: React.FC<NodeProps<AreaNodeType>> = React.memo(
         const { openAreaFromSidebar, selectSidebarSection, selectVisualsTab } =
             useLayout();
 
+        const isLocked = area.locked ?? false;
         const focused = !!selected && !dragging;
+
+        const toggleLock = useCallback(
+            (e: React.MouseEvent) => {
+                e.stopPropagation();
+                updateArea(area.id, { locked: !isLocked });
+            },
+            [area.id, isLocked, updateArea]
+        );
 
         const { checkIfNewArea, checkIfAreaRemoved } = useDiff();
 
@@ -158,7 +169,7 @@ export const AreaNode: React.FC<NodeProps<AreaNodeType>> = React.memo(
                                   : 'none'
                         }
                     />
-                    {!readonly ? (
+                    {!readonly && !isLocked ? (
                         <NodeResizer
                             isVisible={focused}
                             lineClassName="!border-4 !border-transparent"
@@ -256,13 +267,35 @@ export const AreaNode: React.FC<NodeProps<AreaNodeType>> = React.memo(
                                 !readonly &&
                                 !isDiffNewArea &&
                                 !isDiffAreaRemoved && (
-                                    <Button
-                                        variant="ghost"
-                                        className="ml-auto size-5 p-0 opacity-0 transition-opacity hover:bg-white/20 group-hover:opacity-100"
-                                        onClick={enterEditMode}
-                                    >
-                                        <Pencil className="size-3 text-slate-700 dark:text-slate-300" />
-                                    </Button>
+                                    <>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="ml-auto size-5 p-0 opacity-0 transition-opacity hover:bg-white/20 group-hover:opacity-100"
+                                                    onClick={toggleLock}
+                                                >
+                                                    {isLocked ? (
+                                                        <Lock className="size-3 text-pink-600" />
+                                                    ) : (
+                                                        <LockOpen className="size-3 text-slate-700 dark:text-slate-300" />
+                                                    )}
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {isLocked
+                                                    ? t('tool_tips.unlock_area')
+                                                    : t('tool_tips.lock_area')}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <Button
+                                            variant="ghost"
+                                            className="size-5 p-0 opacity-0 transition-opacity hover:bg-white/20 group-hover:opacity-100"
+                                            onClick={enterEditMode}
+                                        >
+                                            <Pencil className="size-3 text-slate-700 dark:text-slate-300" />
+                                        </Button>
+                                    </>
                                 )}
                         </div>
                     </div>

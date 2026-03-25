@@ -543,6 +543,8 @@ export const zh_CN: LanguageTranslation = {
 
         tool_tips: {
             double_click_to_edit: '双击编辑',
+            lock_area: '锁定区域（禁止拖动）',
+            unlock_area: '解锁区域（允许拖动）',
         },
 
         language_select: {

@@ -1032,14 +1032,32 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         (changes) => {
             // Fast path: if all changes are dragging position updates, skip expensive logic
             // This dramatically improves performance when dragging nodes
+            // But filter out locked area drags
             const isOnlyDraggingChanges = changes.every(
                 (change) =>
                     change.type === 'position' && change.dragging === true
             );
 
             if (isOnlyDraggingChanges) {
+                // Filter out locked area drags
+                const filteredChanges = changes.filter((change) => {
+                    if (change.type === 'position') {
+                        const node = getNode(change.id);
+                        if (node?.type === 'area') {
+                            const area = areas.find((a) => a.id === change.id);
+                            return area && !area.locked;
+                        }
+                    }
+                    return true;
+                });
+
+                if (filteredChanges.length === 0) {
+                    // All changes were locked areas, skip update
+                    return;
+                }
+
                 // Just update visual positions, no storage updates needed
-                return onNodesChange(changes);
+                return onNodesChange(filteredChanges);
             }
 
             let changesToApply = changes;
@@ -1051,10 +1069,14 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             }
 
             // Handle area drag changes - add child table movements for visual feedback only
+            // Skip locked areas
             const areaDragChanges = changesToApply.filter((change) => {
                 if (change.type === 'position') {
                     const node = getNode(change.id);
-                    return node?.type === 'area' && change.dragging;
+                    if (node?.type !== 'area' || !change.dragging) return false;
+                    // Check if area is locked
+                    const area = areas.find((a) => a.id === change.id);
+                    return area && !area.locked;
                 }
                 return false;
             }) as NodePositionChange[];

@@ -544,6 +544,8 @@ export const en = {
 
         tool_tips: {
             double_click_to_edit: 'Double-click to edit',
+            lock_area: 'Lock area (prevent dragging)',
+            unlock_area: 'Unlock area (allow dragging)',
         },
 
         language_select: {

@@ -1030,6 +1030,18 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
     const onNodesChangeHandler: OnNodesChange<NodeType> = useCallback(
         (changes) => {
+            // Fast path: if all changes are dragging position updates, skip expensive logic
+            // This dramatically improves performance when dragging nodes
+            const isOnlyDraggingChanges = changes.every(
+                (change) =>
+                    change.type === 'position' && change.dragging === true
+            );
+
+            if (isOnlyDraggingChanges) {
+                // Just update visual positions, no storage updates needed
+                return onNodesChange(changes);
+            }
+
             let changesToApply = changes;
 
             if (readonly) {
